@@ -503,14 +503,14 @@ const HEROES: Story[] = [
   { no: 3, place: 'STRAIT OF HORMUZ', field: 'WAR', tag: 'CLAIM', region: 'MIDDLE EAST', fields: ['War', 'Energy'], head: 'Two tankers hit naval mines, explode and burn', deck: 'IRGC says ships used an unauthorised route; a third tanker hit later; US tells citizens to leave Iran at once.', thumb: 'mines' },
 ];
 const MEDIUM: Story[] = [
-  { no: 4, place: 'GAZA CITY', field: 'WAR', tag: 'CONFIRMED', region: 'MIDDLE EAST', fields: ['War', 'Security'], head: 'Israel kills Hamas security chief', deck: 'Wife and two daughters also killed.', thumb: 'building' },
-  { no: 5, place: 'SAMARA, RUSSIA', field: 'WAR', tag: 'REPORTED', region: 'EUROPE', fields: ['War', 'Energy'], head: 'Ukraine hits Russian refineries', deck: 'Fires at Syzran and Kuibyshev.', thumb: 'refinery' },
-  { no: 6, place: 'DAMAZIN, SUDAN', field: 'WAR', tag: 'REPORTED', region: 'SUB-SAHARAN AFRICA', fields: ['War', 'Humanitarian'], head: 'RSF drones kill 19 in Blue Nile', deck: 'Six women dead; 20 wounded.', thumb: 'drone' },
-  { no: 7, place: 'CAIRO', field: 'DISASTER', tag: 'CONFIRMED', region: 'N. AFRICA', fields: ['Disaster'], head: 'Tanker crash sets Ring Road ablaze', deck: '30 dead; 25 injured on the Ring Road.', thumb: 'tanker' },
-  { no: 8, place: 'PYONGYANG', field: 'DIPLOMACY', tag: 'OFFICIAL', region: 'EAST & SE ASIA', fields: ['Diplomacy', 'Politics'], head: 'North Korea expels Swiss envoy', deck: 'Shuts office; envoy given 48 hours.', thumb: 'flag' },
+  { no: 4, place: 'GAZA CITY', field: 'WAR', tag: 'CONFIRMED', region: 'MIDDLE EAST', fields: ['War', 'Security'], head: 'Israel kills Hamas security chief', deck: 'Wife, girls killed.', thumb: 'building' },
+  { no: 5, place: 'SAMARA, RUSSIA', field: 'WAR', tag: 'REPORTED', region: 'EUROPE', fields: ['War', 'Energy'], head: 'Ukraine hits Russian refineries', deck: 'Refineries ablaze.', thumb: 'refinery' },
+  { no: 6, place: 'DAMAZIN, SUDAN', field: 'WAR', tag: 'REPORTED', region: 'SUB-SAHARAN AFRICA', fields: ['War', 'Humanitarian'], head: 'RSF drones kill 19 in Blue Nile', deck: '19 killed, 20 hurt.', thumb: 'drone' },
+  { no: 7, place: 'CAIRO', field: 'DISASTER', tag: 'CONFIRMED', region: 'N. AFRICA', fields: ['Disaster'], head: 'Tanker crash sets Ring Road ablaze', deck: '30 dead, 25 hurt.', thumb: 'tanker' },
+  { no: 8, place: 'PYONGYANG', field: 'DIPLOMACY', tag: 'OFFICIAL', region: 'EAST & SE ASIA', fields: ['Diplomacy', 'Politics'], head: 'North Korea expels Swiss envoy', deck: '48 hours to leave.', thumb: 'flag' },
   { no: 9, place: 'BENGHAZI, LIBYA', field: 'WAR', tag: 'REPORTED', region: 'N. AFRICA', fields: ['War', 'Security'], head: 'Officers die in warship strike', deck: 'Sea drones hit corvette Merkury.', thumb: 'warship' },
   { no: 10, place: 'BOGOR, INDONESIA', field: 'DISASTER', tag: 'CONFIRMED', region: 'EAST & SE ASIA', fields: ['Disaster', 'Labour'], head: 'Nine dead in gold mine', deck: '17 trapped; bodies from 100-metre pit.', thumb: 'minepit' },
-  { no: 11, place: 'MISSISSIPPI, US', field: 'DISASTER', tag: 'CONFIRMED', region: 'N. AMERICA', fields: ['Disaster'], head: 'Six dead as plane crashes off coast', deck: 'Two children among the dead.', thumb: 'plane' },
+  { no: 11, place: 'MISSISSIPPI, US', field: 'DISASTER', tag: 'CONFIRMED', region: 'N. AMERICA', fields: ['Disaster'], head: 'Six dead as plane crashes off coast', deck: '2 children dead.', thumb: 'plane' },
   { no: 12, place: 'COLOMBIA', field: 'CRIME', tag: 'CONFIRMED', region: 'LATIN AMERICA', fields: ['Crime', 'Security'], head: 'Police free 20 hostages', deck: 'All safe after supermarket storming.', thumb: 'shop' },
   { no: 13, place: 'DHAKA', field: 'LABOUR', tag: 'OFFICIAL', region: 'SOUTH ASIA', fields: ['Labour', 'Economy'], head: 'Garment workers win wage rise', deck: '12,500 to 17,500 taka, up 36%.', thumb: 'sewing' },
 ];
@@ -747,72 +747,240 @@ function sceneMines(pg: Page, x: number, y: number, w: number, h: number) {
   waves(pg, x + 8, y + h - 12, w - 16, '#ffffff', 2.5);
 }
 
-// medium thumbnails (54x54 box)
-function thumb(pg: Page, kind: string, x: number, y: number, s: number) {
+// medium thumbnails — detailed 84x84 mini-scenes (v3: bigger + denser).
+// Box (x, y) top-left, s = 84; accent = the story's region colour, used as a
+// thread through each scene so the picture matches its region chip.
+function thumb(pg: Page, kind: string, x: number, y: number, s: number, accent: string) {
   const bg: Record<string, string> = {
-    building: '#e8dcc8', refinery: '#f2c98f', drone: '#dfe8ef', tanker: '#e8dcc8',
-    flag: '#dfe8ef', warship: '#cfe3f2', minepit: '#e0d3b8', plane: '#cfe3f2',
+    building: '#e8dcc8', refinery: '#f6c177', drone: '#dfe8ef', tanker: '#f0e2c8',
+    flag: '#dfe8ef', warship: '#cfe3f2', minepit: '#e8dcc8', plane: '#cfe3f2',
     shop: '#e3d9f2', sewing: '#f2ddd3',
   };
+  const ac = hex(accent);
+  const dk = hex('#1b1712');
   pg.fillRect(x, y, s, s, hex(bg[kind] || '#e8e8e8'));
   pg.fillRect(x, y, s, 3, hex('#1b1712'), 0.85);
-  const dk = hex('#1b1712');
+  // ground band at the bottom of the scene; drawn first, motifs sit on it
+  const ground = (gy: number, col: string) => {
+    pg.fillRect(x, y + gy, s, s - gy, hex(col));
+    pg.fillRect(x, y + gy, s, 2, hex('#1b1712'), 0.25);
+  };
   if (kind === 'building') {
-    pg.fillRect(x + 10, y + 18, 22, 28, hex('#8a7d68'));
-    pg.fillRect(x + 32, y + 26, 12, 20, hex('#a89a80'));
-    pg.fillRect(x + 14, y + 24, 4, 5, hex('#f2b53c')); pg.fillRect(x + 22, y + 24, 4, 5, hex('#f2b53c'));
-    smoke(pg, x + 20, y + 12, 3, 2);
+    ground(64, '#c9b896');
+    // distant skyline behind the two main blocks
+    pg.fillRect(x + 56, y + 30, 12, 34, hex('#b3a888'));
+    pg.fillRect(x + 70, y + 38, 10, 26, hex('#c2b697'));
+    // two big damaged tower blocks, one with a broken zigzag roof
+    pg.fillPoly([[[x + 8, y + 20], [x + 20, y + 14], [x + 30, y + 20], [x + 30, y + 64], [x + 8, y + 64]]], hex('#8a7d68'));
+    pg.fillRect(x + 34, y + 28, 22, 36, hex('#a89a80'));
+    pg.fillRect(x + 34, y + 28, 22, 4, ac);
+    // windows: some lit yellow, some blown dark
+    pg.fillRect(x + 13, y + 28, 5, 6, hex('#f2b53c')); pg.fillRect(x + 21, y + 28, 5, 6, dk);
+    pg.fillRect(x + 13, y + 38, 5, 6, dk); pg.fillRect(x + 21, y + 38, 5, 6, hex('#f2b53c'));
+    pg.fillRect(x + 13, y + 48, 5, 6, hex('#f2b53c')); pg.fillRect(x + 21, y + 48, 5, 6, dk);
+    pg.fillRect(x + 39, y + 36, 5, 6, hex('#f2b53c')); pg.fillRect(x + 47, y + 36, 5, 6, dk);
+    pg.fillRect(x + 39, y + 46, 5, 6, dk); pg.fillRect(x + 47, y + 46, 5, 6, hex('#f2b53c'));
+    // smoke from the broken roof, flame at the base, rubble on the ground
+    smoke(pg, x + 19, y + 16, 2, 2, 6);
+    flame(pg, x + 47, y + 60, 1.1);
+    pg.fillRect(x + 10, y + 68, 8, 4, hex('#8a7d68')); pg.fillRect(x + 22, y + 70, 6, 3, hex('#a89a80'));
+    pg.fillRect(x + 60, y + 68, 10, 4, hex('#8a7d68')); pg.circle(x + 44, y + 72, 3, hex('#a89a80'));
   } else if (kind === 'refinery') {
-    pg.fillRect(x + 12, y + 16, 8, 30, hex('#6b7280'));
-    pg.fillRect(x + 28, y + 10, 8, 36, hex('#4b5563'));
-    flame(pg, x + 16, y + 10, 0.8); flame(pg, x + 32, y + 4, 0.9);
-    pg.ellipse(x + 44, y + 40, 7, 3, hex('#e8e2d2')); pg.fillRect(x + 37, y + 40, 14, 6, hex('#e8e2d2'));
+    ground(64, '#5a4632');
+    sun(pg, x + 14, y + 14, 8);
+    // two tall towers with cross-bands and caps
+    pg.fillRect(x + 30, y + 26, 12, 38, hex('#6b7280'));
+    pg.fillRect(x + 48, y + 18, 12, 46, hex('#4b5563'));
+    pg.fillRect(x + 30, y + 22, 12, 4, hex('#374151'));
+    pg.fillRect(x + 48, y + 14, 12, 4, hex('#374151'));
+    pg.fillRect(x + 30, y + 34, 12, 3, hex('#374151')); pg.fillRect(x + 30, y + 46, 12, 3, hex('#374151'));
+    pg.fillRect(x + 48, y + 28, 12, 3, hex('#374151')); pg.fillRect(x + 48, y + 40, 12, 3, hex('#374151'));
+    pg.fillRect(x + 48, y + 52, 12, 3, ac);
+    pg.line(x + 42, y + 36, x + 48, y + 32, 3, ac);
+    // storage tank at the right foot of the towers
+    pg.ellipse(x + 70, y + 58, 11, 4, hex('#e8e2d2'));
+    pg.fillRect(x + 59, y + 58, 22, 6, hex('#e8e2d2'));
+    // flames on both tower tops + one at the base, small hand-placed puffs only
+    flame(pg, x + 36, y + 24, 0.95); flame(pg, x + 54, y + 18, 1.0); flame(pg, x + 24, y + 60, 1.0);
+    pg.circle(x + 30, y + 6, 3.5, hex('#55524e'), 0.8);
+    pg.circle(x + 40, y + 4, 3, hex('#6b6560'), 0.8);
+    pg.circle(x + 48, y + 4, 3.5, hex('#55524e'), 0.8);
+    pg.circle(x + 58, y + 6, 3, hex('#6b6560'), 0.8);
   } else if (kind === 'drone') {
-    pg.ellipse(x + 27, y + 14, 8, 3.5, dk);
-    pg.line(x + 16, y + 11, x + 38, y + 11, 1.6, dk);
-    pg.line(x + 20, y + 17, x + 16, y + 24, 1.4, dk); pg.line(x + 34, y + 17, x + 38, y + 24, 1.4, dk);
-    pg.fillRect(x + 8, y + 34, 12, 12, hex('#a89a80')); pg.fillRect(x + 24, y + 38, 12, 8, hex('#8a7d68'));
-    pg.fillRect(x + 40, y + 34, 10, 12, hex('#a89a80'));
+    pg.ellipse(x + 16, y + 12, 10, 4, hex('#ffffff'));
+    pg.ellipse(x + 66, y + 10, 12, 4, hex('#ffffff'));
+    pg.ellipse(x + 70, y + 20, 8, 3, hex('#ffffff'));
+    ground(70, '#8a7d68');
+    // row of three big houses, middle roof in the region accent
+    pg.fillRect(x + 6, y + 52, 20, 18, hex('#a89a80'));
+    pg.fillPoly([[[x + 4, y + 52], [x + 16, y + 42], [x + 28, y + 52]]], hex('#8a7d68'));
+    pg.fillRect(x + 30, y + 50, 22, 20, hex('#c2b697'));
+    pg.fillPoly([[[x + 28, y + 50], [x + 41, y + 40], [x + 54, y + 50]]], ac);
+    pg.fillRect(x + 56, y + 54, 20, 16, hex('#a89a80'));
+    pg.fillPoly([[[x + 54, y + 54], [x + 66, y + 44], [x + 78, y + 54]]], hex('#8a7d68'));
+    pg.fillRect(x + 13, y + 60, 5, 10, dk); pg.fillRect(x + 38, y + 58, 5, 12, dk);
+    pg.fillRect(x + 62, y + 60, 5, 5, hex('#f2b53c'));
+    pg.fillRect(x + 45, y + 56, 4, 4, hex('#f2b53c'));
+    pg.ellipse(x + 42, y + 73, 22, 2.5, dk, 0.15);
+    // big drone above the houses, with rotors, legs and a payload
+    pg.ellipse(x + 42, y + 20, 14, 5, dk);
+    pg.line(x + 24, y + 16, x + 60, y + 16, 2, dk);
+    pg.circle(x + 24, y + 16, 2.5, dk); pg.circle(x + 60, y + 16, 2.5, dk);
+    pg.line(x + 28, y + 24, x + 24, y + 32, 1.6, dk); pg.line(x + 56, y + 24, x + 60, y + 32, 1.6, dk);
+    pg.line(x + 42, y + 25, x + 42, y + 27, 1.6, dk); pg.circle(x + 42, y + 30, 3, dk);
   } else if (kind === 'tanker') {
-    pg.fillRect(x + 6, y + 38, 42, 4, hex('#5c564a'));
-    pg.fillRect(x + 10, y + 22, 26, 12, hex('#c0392b'));
-    pg.ellipse(x + 23, y + 22, 13, 4, hex('#e8e2d2'));
-    pg.circle(x + 16, y + 38, 4, dk); pg.circle(x + 40, y + 38, 4, dk);
-    flame(pg, x + 23, y + 16, 0.9);
+    sun(pg, x + 70, y + 12, 7);
+    // road band with white dashes
+    ground(52, '#5c564a');
+    pg.fillRect(x + 8, y + 62, 10, 2, hex('#ffffff')); pg.fillRect(x + 28, y + 62, 10, 2, hex('#ffffff'));
+    pg.fillRect(x + 48, y + 62, 10, 2, hex('#ffffff')); pg.fillRect(x + 68, y + 62, 10, 2, hex('#ffffff'));
+    // big fuel tanker truck: cylindrical tank + accent cab + three wheels
+    pg.fillRect(x + 10, y + 32, 36, 18, hex('#c0392b'));
+    pg.ellipse(x + 28, y + 32, 18, 6, hex('#e8e2d2'));
+    pg.ellipse(x + 28, y + 50, 18, 6, hex('#a93226'));
+    pg.fillRect(x + 48, y + 36, 22, 14, ac);
+    pg.fillRect(x + 56, y + 38, 10, 6, hex('#cfe3f2'));
+    pg.fillRect(x + 48, y + 50, 22, 3, dk);
+    pg.circle(x + 20, y + 54, 5, dk); pg.circle(x + 20, y + 54, 2, hex('#8a7d68'));
+    pg.circle(x + 38, y + 54, 5, dk); pg.circle(x + 60, y + 54, 5, dk);
+    pg.ellipse(x + 40, y + 60, 28, 2.5, dk, 0.18);
+    // big flame over the tank, only small hand-placed puffs above it
+    flame(pg, x + 28, y + 30, 1.35);
+    pg.circle(x + 27, y + 4, 3, hex('#55524e'), 0.8);
+    pg.circle(x + 34, y + 5, 3.5, hex('#55524e'), 0.8);
+    pg.circle(x + 42, y + 8, 3, hex('#6b6560'), 0.8);
   } else if (kind === 'flag') {
-    pg.line(x + 14, y + 8, x + 14, y + 46, 2, dk);
-    flagEU(pg, x + 14, y + 8, 20, 13);
-    pg.fillRect(x + 30, y + 30, 16, 16, hex('#8a7d68'));
-    pg.fillRect(x + 28, y + 28, 20, 3, hex('#5c564a'));
+    sun(pg, x + 70, y + 12, 7);
+    ground(70, '#8a7d68');
+    // government building: pediment, four columns, door, steps
+    pg.fillRect(x + 10, y + 46, 64, 24, hex('#a89a80'));
+    pg.fillPoly([[[x + 10, y + 46], [x + 42, y + 34], [x + 74, y + 46]]], ac);
+    pg.fillRect(x + 10, y + 46, 64, 3, ac);
+    pg.fillRect(x + 16, y + 50, 5, 20, hex('#e8e2d2')); pg.fillRect(x + 30, y + 50, 5, 20, hex('#e8e2d2'));
+    pg.fillRect(x + 44, y + 50, 5, 20, hex('#e8e2d2')); pg.fillRect(x + 58, y + 50, 5, 20, hex('#e8e2d2'));
+    pg.fillRect(x + 38, y + 58, 8, 12, dk);
+    pg.fillRect(x + 14, y + 70, 56, 3, hex('#c2b697')); pg.fillRect(x + 18, y + 73, 48, 3, hex('#b3a888'));
+    pg.circle(x + 5, y + 66, 4, hex('#15803d')); pg.circle(x + 79, y + 66, 4, hex('#15803d'));
+    // tall flagpole with a large waving flag (red field, white disc, red star)
+    pg.line(x + 16, y + 8, x + 16, y + 46, 2, dk);
+    pg.fillRect(x + 16, y + 8, 36, 20, hex('#de2910'));
+    pg.fillRect(x + 16, y + 8, 36, 3, hex('#1e3a8a'));
+    pg.fillRect(x + 16, y + 25, 36, 3, hex('#1e3a8a'));
+    pg.circle(x + 34, y + 18, 7, hex('#ffffff'));
+    pg.fillPoly([star(x + 34, y + 18, 5)], hex('#de2910'));
   } else if (kind === 'warship') {
-    pg.fillRect(x + 4, y + 40, 46, 5, hex('#2b6a8f'));
-    pg.fillPoly([[[x + 10, y + 40], [x + 44, y + 40], [x + 40, y + 32], [x + 16, y + 32]]], hex('#374151'));
-    pg.fillRect(x + 30, y + 24, 4, 8, hex('#374151'));
-    pg.ellipse(x + 20, y + 16, 5, 2.5, dk);
-    pg.line(x + 14, y + 14, x + 26, y + 14, 1.4, dk);
+    sun(pg, x + 14, y + 12, 8);
+    pg.ellipse(x + 60, y + 12, 10, 4, hex('#ffffff'));
+    ground(52, '#2b6a8f');
+    // big warship: hull with accent stripe, deck, superstructure, mast, gun
+    pg.fillPoly([[[x + 6, y + 46], [x + 72, y + 46], [x + 66, y + 58], [x + 12, y + 58]]], hex('#374151'));
+    pg.fillRect(x + 6, y + 46, 66, 3, ac);
+    pg.fillRect(x + 20, y + 40, 34, 6, hex('#4b5563'));
+    pg.fillRect(x + 30, y + 32, 18, 8, hex('#e8e2d2'));
+    pg.line(x + 40, y + 32, x + 40, y + 22, 2, dk);
+    pg.circle(x + 40, y + 20, 3, dk);
+    pg.fillRect(x + 56, y + 40, 10, 3, dk);
+    pg.line(x + 66, y + 41, x + 74, y + 38, 2, dk);
+    pg.circle(x + 24, y + 52, 1.5, hex('#ffffff')); pg.circle(x + 34, y + 52, 1.5, hex('#ffffff'));
+    pg.circle(x + 44, y + 52, 1.5, hex('#ffffff'));
+    // big explosion at the bow, no smoke over the ship
+    flame(pg, x + 18, y + 44, 1.5);
+    flame(pg, x + 30, y + 44, 0.9);
+    // small sea drone with wake on the water
+    pg.ellipse(x + 58, y + 64, 7, 3, dk);
+    pg.line(x + 52, y + 62, x + 64, y + 62, 1.4, dk);
+    pg.line(x + 58, y + 62, x + 58, y + 56, 1.4, dk);
+    pg.line(x + 48, y + 66, x + 40, y + 68, 1.4, hex('#ffffff'), 0.8);
+    waves(pg, x + 4, y + 68, 76, '#ffffff', 2);
   } else if (kind === 'minepit') {
-    pg.ellipse(x + 27, y + 34, 16, 8, hex('#5a4632'));
-    pg.ellipse(x + 27, y + 33, 12, 5, hex('#1b1712'));
-    pg.circle(x + 14, y + 44, 4, hex('#8a7d68')); pg.circle(x + 40, y + 45, 3.5, hex('#8a7d68'));
-    pg.fillPoly([[[x + 20, y + 14], [x + 34, y + 14], [x + 30, y + 20], [x + 24, y + 20]]], hex('#f2b53c'));
-    pg.fillRect(x + 24, y + 20, 6, 3, hex('#f2b53c'));
+    // rocky hills behind the pit
+    pg.fillPoly([[[x, y + 44], [x + 22, y + 24], [x + 44, y + 44]]], hex('#b3a888'));
+    pg.fillPoly([[[x + 40, y + 44], [x + 62, y + 28], [x + 84, y + 44]]], hex('#c2b697'));
+    ground(66, '#8a7d68');
+    // the pit itself: wide dark ellipse with a brown rim
+    pg.ellipse(x + 42, y + 52, 26, 11, hex('#5a4632'));
+    pg.ellipse(x + 42, y + 51, 20, 8, hex('#1b1712'));
+    // big yellow helmet in the foreground, pickaxe and stones beside it
+    const dome: [number, number][] = [];
+    for (let i = 0; i <= 12; i++) { const t = Math.PI + (i / 12) * Math.PI; dome.push([x + 24 + Math.cos(t) * 12, y + 74 + Math.sin(t) * 12]); }
+    pg.fillPoly([dome], hex('#f2b53c'));
+    pg.fillRect(x + 10, y + 74, 28, 3, hex('#f2b53c'));
+    pg.fillRect(x + 22, y + 63, 4, 11, hex('#d99a1f'));
+    pg.line(x + 54, y + 56, x + 68, y + 70, 2.5, hex('#5c564a'));
+    pg.fillPoly([[[x + 62, y + 54], [x + 72, y + 58], [x + 68, y + 62], [x + 62, y + 58]]], dk);
+    pg.circle(x + 58, y + 72, 3.5, hex('#a89a80')); pg.circle(x + 66, y + 74, 3, hex('#8a7d68'));
+    pg.circle(x + 70, y + 50, 3, hex('#a89a80')); pg.circle(x + 16, y + 48, 3, hex('#a89a80'));
+    // small accent warning triangle by the pit rim
+    pg.fillPoly([[[x + 72, y + 38], [x + 78, y + 48], [x + 66, y + 48]]], ac);
   } else if (kind === 'plane') {
-    pg.fillPoly([[[x + 6, y + 22], [x + 46, y + 18], [x + 48, y + 22], [x + 20, y + 28], [x + 10, y + 28]]], hex('#374151'));
-    pg.fillPoly([[[x + 24, y + 20], [x + 30, y + 12], [x + 34, y + 20]]], hex('#374151'));
-    waves(pg, x + 6, y + 42, 42, '#2b6a8f', 2);
+    pg.ellipse(x + 16, y + 12, 10, 4, hex('#ffffff'));
+    pg.ellipse(x + 64, y + 10, 12, 4, hex('#ffffff'));
+    sun(pg, x + 70, y + 24, 6);
+    ground(56, '#2b6a8f');
+    // chunky plane diving toward the sea: thick fuselage, big light wing, tall tail fin
+    pg.fillPoly([[[x + 12, y + 18], [x + 20, y + 12], [x + 58, y + 40], [x + 62, y + 48], [x + 54, y + 52], [x + 16, y + 30]]], hex('#374151'));
+    pg.fillPoly([[[x + 26, y + 26], [x + 38, y + 4], [x + 54, y + 30]]], hex('#8b98a9'));
+    pg.fillPoly([[[x + 20, y + 18], [x + 30, y + 4], [x + 36, y + 22]]], hex('#4b5563'));
+    pg.line(x + 20, y + 20, x + 54, y + 44, 3, ac);
+    pg.circle(x + 50, y + 40, 2, hex('#ffffff'));
+    pg.circle(x + 44, y + 36, 1.5, hex('#ffffff'));
+    // splash where the nose meets the water, waves below
+    pg.ring(x + 58, y + 58, 8, 1.6, hex('#ffffff'), 0.9);
+    pg.ring(x + 58, y + 58, 12, 1.4, hex('#ffffff'), 0.6);
+    pg.circle(x + 50, y + 52, 2, hex('#ffffff')); pg.circle(x + 66, y + 52, 2, hex('#ffffff'));
+    waves(pg, x + 4, y + 68, 76, '#ffffff', 2);
   } else if (kind === 'shop') {
-    pg.fillRect(x + 8, y + 20, 38, 24, hex('#f4f1e6'));
-    pg.fillRect(x + 8, y + 14, 38, 6, hex('#7c3aed'));
-    pg.fillRect(x + 12, y + 26, 10, 8, hex('#b91c1c')); pg.fillRect(x + 26, y + 26, 10, 8, hex('#15803d'));
-    pg.circle(x + 40, y + 12, 9, hex('#15803d'));
-    pg.fillPoly([[[x + 36, y + 12], [x + 39, y + 15], [x + 44, y + 9], [x + 44, y + 12], [x + 39, y + 18], [x + 36, y + 15]]], hex('#ffffff'));
+    ground(68, '#c9b896');
+    // storefront: accent sign band, striped awning, glass window with goods, door
+    pg.fillRect(x + 6, y + 16, 72, 52, hex('#f4f1e6'));
+    pg.fillRect(x + 6, y + 16, 72, 8, ac);
+    for (let i = 0; i < 8; i++) pg.fillRect(x + 6 + i * 9, y + 24, 9, 8, i % 2 ? hex('#ffffff') : ac);
+    pg.fillRect(x + 6, y + 32, 72, 1.5, hex('#1b1712'), 0.4);
+    pg.fillRect(x + 12, y + 36, 32, 22, hex('#bcd9ee'));
+    pg.fillRect(x + 15, y + 44, 8, 8, hex('#b91c1c')); pg.fillRect(x + 25, y + 42, 8, 10, hex('#f2b53c'));
+    pg.fillRect(x + 35, y + 46, 8, 6, hex('#15803d'));
+    pg.fillRect(x + 12, y + 52, 32, 2, hex('#8a7d68'));
+    pg.fillRect(x + 50, y + 36, 20, 32, hex('#8a7d68'));
+    pg.fillRect(x + 54, y + 40, 12, 12, hex('#cfe3f2'));
+    pg.circle(x + 66, y + 54, 1.5, dk);
+    // big green shield with a white check, overlapping the door
+    pg.circle(x + 64, y + 62, 14, hex('#15803d'));
+    pg.ring(x + 64, y + 62, 14, 1.5, hex('#ffffff'), 0.9);
+    pg.fillPoly([[[x + 57, y + 62], [x + 61, y + 66], [x + 71, y + 56], [x + 71, y + 60], [x + 61, y + 70], [x + 57, y + 66]]], hex('#ffffff'));
   } else if (kind === 'sewing') {
-    pg.fillRect(x + 10, y + 34, 34, 4, hex('#5c564a'));
-    pg.fillPoly([[[x + 14, y + 34], [x + 20, y + 22], [x + 34, y + 22], [x + 38, y + 34]]], hex('#374151'));
-    pg.fillRect(x + 36, y + 14, 3, 12, hex('#374151'));
-    pg.fillRect(x + 12, y + 42, 30, 3, hex('#b91c1c'));
-    pg.circle(x + 42, y + 12, 6, hex('#f2b53c'));
-    pg.text('$', x + 42, y + 16, F_SANS, 9, hex('#1b1712'), 'c');
+    ground(56, '#8a7d68');
+    pg.fillRect(x + 6, y + 56, 72, 4, hex('#5c564a'));
+    // big sewing machine: thick base, column, wide arm, needle bar, thread spool
+    pg.fillRect(x + 10, y + 48, 56, 8, hex('#374151'));
+    pg.fillRect(x + 54, y + 20, 8, 28, hex('#374151'));
+    pg.fillRect(x + 30, y + 18, 34, 10, hex('#374151'));
+    pg.fillRect(x + 30, y + 28, 34, 2, ac);
+    pg.fillRect(x + 26, y + 20, 10, 20, hex('#4b5563'));
+    pg.fillRect(x + 28, y + 38, 4, 8, dk);
+    pg.fillPoly([[[x + 28, y + 46], [x + 32, y + 46], [x + 30, y + 51]]], dk);
+    pg.line(x + 31, y + 28, x + 31, y + 46, 1.2, hex('#f2b53c'));
+    pg.fillRect(x + 24, y + 46, 12, 2, dk);
+    // big hand wheel on the column top: rim, spokes, hub, thread down to the needle
+    pg.circle(x + 58, y + 13, 7, hex('#f2b53c'));
+    pg.ring(x + 58, y + 13, 7, 1.6, dk, 0.9);
+    pg.line(x + 58, y + 6, x + 58, y + 20, 1.4, dk);
+    pg.line(x + 51, y + 13, x + 65, y + 13, 1.4, dk);
+    pg.circle(x + 58, y + 13, 2, dk);
+    pg.line(x + 58, y + 20, x + 32, y + 22, 1.6, hex('#f2b53c'));
+    // narrow cloth under the needle, with a folded edge and stitch dashes
+    pg.fillPoly([[[x + 18, y + 48], [x + 22, y + 40], [x + 42, y + 40], [x + 46, y + 48]]], ac);
+    pg.fillPoly([[[x + 38, y + 40], [x + 42, y + 40], [x + 46, y + 48], [x + 42, y + 48]]], dk, 0.3);
+    pg.line(x + 24, y + 42, x + 23, y + 47, 1, hex('#ffffff'), 0.8);
+    pg.line(x + 30, y + 42, x + 30, y + 47, 1, hex('#ffffff'), 0.8);
+    pg.line(x + 36, y + 42, x + 37, y + 47, 1, hex('#ffffff'), 0.8);
+    pg.fillPoly([[[x + 66, y + 10], [x + 78, y + 16], [x + 74, y + 28], [x + 62, y + 22]]], ac);
+    pg.circle(x + 68, y + 16, 1.5, hex('#ffffff'));
+    pg.line(x + 66, y + 12, x + 60, y + 14, 1, dk);
+    pg.line(x + 68, y + 18, x + 74, y + 20, 1, hex('#ffffff'), 0.8);
+    pg.line(x + 68, y + 21, x + 72, y + 23, 1, hex('#ffffff'), 0.8);
+    pg.circle(x + 12, y + 60, 2, dk); pg.circle(x + 18, y + 60, 2, dk);
+    pg.line(x + 13, y + 60, x + 22, y + 54, 1.4, dk); pg.line(x + 17, y + 60, x + 22, y + 54, 1.4, dk);
+    pg.ellipse(x + 38, y + 58, 24, 2, dk, 0.15);
   }
 }
 
@@ -953,21 +1121,22 @@ function main() {
     pg.para(s.deck, x, hy + 168 + hl.length * 19 + 2, F_SANS, 11, 14, soft, hw - 4);
   });
 
-  // ---- medium, 2 rows x 5
+  // ---- medium, 2 rows x 5 — v3: 84px detailed thumbnails, narrow text column
   const mw = (CW - 4 * 8) / 5, mh = 90;
   MEDIUM.forEach((s, i) => {
     const col = i % 5, row = Math.floor(i / 5);
     const x = MX + col * (mw + 8), yy = 452 + row * (mh + 6);
     pg.fillRect(x, yy, mw, mh, hex('#fffdf6'));
     pg.fillRect(x, yy, mw, 1, hex(RULE));
-    thumb(pg, s.thumb, x, yy + 6, 54);
+    thumb(pg, s.thumb, x, yy + 3, 84, regionCol(s.region));
+    // number disc drawn AFTER the thumbnail, so it stays fully visible on top
     numDisc(pg, x + 12, yy + 18, 18, s.no, regionCol(s.region), 11);
-    const tx = x + 62, tw = mw - 66;
-    pg.text(s.place, tx, yy + 12, F_BOLD, 10, ink, 'l', 0.3);
-    tagChip(pg, tx, yy + 16, s.tag);
+    const tx = x + 90, tw = mw - 94;
+    pg.text(s.place, tx, yy + 11, F_BOLD, 10, ink, 'l', 0.3);
+    tagChip(pg, tx, yy + 15, s.tag);
     const hl = pg.wrap(s.head, F_SERIF, 12, tw);
-    hl.slice(0, 3).forEach((ln, k) => pg.text(ln, tx, yy + 44 + k * 14, F_SERIF, 12, ink));
-    pg.para(s.deck, tx, yy + 44 + Math.min(3, hl.length) * 14 + 1, F_SANS, 10.5, 13, soft, tw);
+    hl.slice(0, 3).forEach((ln, k) => pg.text(ln, tx, yy + 41 + k * 13, F_SERIF, 12, ink));
+    pg.para(s.deck, tx, yy + 41 + Math.min(3, hl.length) * 13, F_SANS, 10.5, 13, soft, tw);
   });
 
   // ---- bottom band: map + ALSO
